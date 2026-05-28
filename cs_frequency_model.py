@@ -130,6 +130,10 @@ DEFAULT_RF = {
     "push_DPAO_MHz": 97.0,
     "mot3d_DPAO_MHz": 101.0,
     "mot2d_DPAO_MHz": 96.0,
+    # This is a separate +1 SPAO used only in the dRSC branch. It is not the
+    # 2DMOT DPAO above. The name means: the dRSC branch first passes through
+    # a 2DMOT-shifter SPAO before reaching the dRSC SPAO.
+    "drsc_2dmot_shifter_SPAO_MHz": 75.0,
     "drsc_SPAO_MHz": 200.0,
 }
 
@@ -142,6 +146,12 @@ AOMS = {
     "push_DPAO_MHz": AOM("push_DPAO_MHz", "Push DPAO", passes=2, order=+1),
     "mot3d_DPAO_MHz": AOM("mot3d_DPAO_MHz", "3DMOT DPAO", passes=2, order=+1),
     "mot2d_DPAO_MHz": AOM("mot2d_DPAO_MHz", "2DMOT DPAO", passes=2, order=+1),
+    "drsc_2dmot_shifter_SPAO_MHz": AOM(
+        "drsc_2dmot_shifter_SPAO_MHz",
+        "dRSC 2DMOT shifter SPAO",
+        passes=1,
+        order=+1,
+    ),
     "drsc_SPAO_MHz": AOM("drsc_SPAO_MHz", "dRSC SPAO", passes=1, order=-1),
 }
 
@@ -155,10 +165,32 @@ FREQUENCY_GRAPH_EDGES = {
     "PUSH": FrequencyEdge("CsTA", "push_DPAO_MHz"),
     "3DMOT": FrequencyEdge("CsTA", "mot3d_DPAO_MHz"),
     "2DMOT": FrequencyEdge("CsTA", "mot2d_DPAO_MHz"),
-    "dRSC": FrequencyEdge("CsTA", "drsc_SPAO_MHz"),
+
+    # Internal dRSC branch node. This is not a final beam output, so it is not
+    # listed in BEAM_ORDER below. It exists only so graph_path("dRSC") and the
+    # frequency calculation follow the true experimental path:
+    #
+    #     CsTA -> +75 MHz 2DMOT-shifter SPAO -> -200 MHz dRSC SPAO -> dRSC
+    #
+    # This 2DMOT-shifter SPAO is distinct from mot2d_DPAO_MHz.
+    "dRSC_2DMOT_SHIFTER": FrequencyEdge("CsTA", "drsc_2dmot_shifter_SPAO_MHz"),
+    "dRSC": FrequencyEdge("dRSC_2DMOT_SHIFTER", "drsc_SPAO_MHz"),
 }
 
-BEAM_ORDER = ["CsDBR1"] + list(FREQUENCY_GRAPH_EDGES.keys())
+# Final outputs to expose in the UI/plots. Internal graph nodes such as
+# dRSC_2DMOT_SHIFTER are intentionally excluded.
+BEAM_ORDER = [
+    "CsDBR1",
+    "CsDBR2",
+    "CsTA",
+    "Repump",
+    "OP",
+    "SMALL_BEAM",
+    "PUSH",
+    "3DMOT",
+    "2DMOT",
+    "dRSC",
+]
 
 
 def all_d2_transitions() -> List[Transition]:
