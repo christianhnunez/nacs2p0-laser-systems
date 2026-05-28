@@ -322,7 +322,7 @@ def make_graph_figure(model: CsFrequencyModel, selected_beam: str) -> Figure:
     ax = fig.add_subplot(111, facecolor=LIGHT_PANEL_BG)
     ax.set_title("Laser system directed graph", fontsize=13)
     ax.set_axis_off()
-    ax.set_xlim(-0.2, 10.2)
+    ax.set_xlim(-0.2, 10.9)
     ax.set_ylim(-0.55, 7.1)
     label_box = dict(boxstyle="round,pad=0.16", facecolor="white", edgecolor="none", alpha=0.9)
 
@@ -396,7 +396,6 @@ def make_graph_figure(model: CsFrequencyModel, selected_beam: str) -> Figure:
         "PUSH": {"y": 3.45, "component": FREQUENCY_GRAPH_EDGES["PUSH"].component},
         "3DMOT": {"y": 2.55, "component": FREQUENCY_GRAPH_EDGES["3DMOT"].component},
         "2DMOT": {"y": 1.65, "component": FREQUENCY_GRAPH_EDGES["2DMOT"].component},
-        "dRSC": {"y": 0.75, "component": FREQUENCY_GRAPH_EDGES["dRSC"].component},
     }
     for child, cfg in ta_branches.items():
         y = cfg["y"]
@@ -408,6 +407,39 @@ def make_graph_figure(model: CsFrequencyModel, selected_beam: str) -> Figure:
         rectangle_node(6.25, y, 0.86, 0.46, aom_short_label(comp), edge=color, face="white", lw=1.7)
         arrow(6.70, y, 7.70, y, color, lw=1.9)
         output_port(7.92, y, child, color)
+
+    # dRSC is a two-stage branch:
+    # CsTA -> 2DMOT-shifter SPAO -> dRSC SPAO -> dRSC output.
+    # The shifter is an internal graph node, so it is not selectable as a final beam,
+    # but it is explicitly drawn here so the optical path is visible.
+    y = 0.75
+    color = node_color("dRSC")
+    shifter_node = "dRSC_2DMOT_SHIFTER"
+
+    if shifter_node in FREQUENCY_GRAPH_EDGES:
+        shifter_comp = FREQUENCY_GRAPH_EDGES[shifter_node].component
+        drsc_comp = FREQUENCY_GRAPH_EDGES["dRSC"].component
+
+        line(bus_x, y, 5.15, y, color, lw=1.9)
+        arrow(5.15, y, 5.35, y, color, lw=1.9)
+        label(4.96, y + 0.22, edge_label(model, shifter_comp), color, fontsize=7.0)
+        rectangle_node(5.93, y, 0.90, 0.46, aom_short_label(shifter_comp), edge=color, face="white", lw=1.7)
+
+        arrow(6.39, y, 6.93, y, color, lw=1.9)
+        label(6.65, y + 0.22, edge_label(model, drsc_comp), color, fontsize=7.0)
+        rectangle_node(7.45, y, 0.86, 0.46, aom_short_label(drsc_comp), edge=color, face="white", lw=1.7)
+
+        arrow(7.90, y, 8.70, y, color, lw=1.9)
+        output_port(8.92, y, "dRSC", color)
+    else:
+        # Backward-compatible fallback for older cs_frequency_model.py files.
+        comp = FREQUENCY_GRAPH_EDGES["dRSC"].component
+        line(bus_x, y, 5.45, y, color, lw=1.9)
+        arrow(5.45, y, 5.65, y, color, lw=1.9)
+        label(5.08, y + 0.22, edge_label(model, comp), color, fontsize=7.2)
+        rectangle_node(6.25, y, 0.86, 0.46, aom_short_label(comp), edge=color, face="white", lw=1.7)
+        arrow(6.70, y, 7.70, y, color, lw=1.9)
+        output_port(7.92, y, "dRSC", color)
 
     path = " -> ".join(model.graph_path(selected_beam))
     ax.text(-0.12, -0.38, f"Selected path: {path}", fontsize=8.5, ha="left", va="bottom",
