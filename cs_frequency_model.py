@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 
-APP_TITLE = "NaCs 2.0 Cs System"
+APP_TITLE = "NaCs 2.0 Cesium System"
 
 # -----------------------------------------------------------------------------
 # Cs D2 constants in MHz, from Steck's Cs D-line data.
